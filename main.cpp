@@ -1,94 +1,65 @@
-/*Даны неотрицательные целые числа N, K и массив целых чисел из диапазона [0,109] размера N.
- * Требуется найти K-ю порядковую статистику, т.е.
- * напечатать число, которое бы стояло на позиции с индексом K ∈[0,N−1] в отсортированном массиве.
-
-Реализуйте алгоритм QuickSelect (среднее время работы O(N)).
+/*Дан массив неотрицательных целых 64-битных чисел. Количество чисел не больше 300000.
+  Отсортировать массив методом поразрядной сортировки LSD по байтам.
 
 Входные данные
-В первой строке записаны N и K.
-
-В N последующих строках записаны числа последовательности.
+В первой строке вводится количество чисел в массиве N.
+ На следующей строке через пробел вводятся N неотрицательных чисел.
 
 Выходные данные
-K-я порядковая статистика.*/
+Выведите этот массив, отсортированный в порядке возрастания, в одну строчку через пробел.*/
 
 #include <iostream>
 #include <vector>
 
-template<class T>
-void swap(T* obj1, T* obj2) {
-    static T tmp;
-    tmp = *obj1;
-    *obj1 = *obj2;
-    *obj2 = tmp;
-}
-
-template<class T, class Comparator>
-T* partition (long long pivotIndex, T* array, long long size) {
-
-    static Comparator compare;
-    T* pivot = array + pivotIndex;
-    T pivotValue = *pivot;
-    T* store = array;
-    swap<T>(pivot, array + size - 1);
-
-    for (long long i = 0; i < size - 1; ++i) {
-        if (compare((array + i), &pivotValue)) {
-            swap<T>(array + i, store);
-            ++store;
-        }
+void sortByLSByte(unsigned long long* beginning, int size, unsigned long long magnitude) {
+    std::vector<unsigned long long> buffer(size);
+    std::vector<int> indexByByte(256, 0);
+    //count bytes
+    for (unsigned long long* ptr = beginning; ptr < beginning + size; ++ptr) {
+        ++indexByByte[(*ptr / magnitude) % 256];
     }
-
-    swap<T>(store, array + size - 1);
-    return store;
-
-}
-
-template<class T, class Comparator>
-T quickSelect (long long index, T* array, long long size) {
-    T* pos = array;
-    while(true) {
-        if (size <= 0) {
-            return *pos;
-        }
-        pos = partition<T, Comparator>((std::rand() % size), array, size); // NOLINT(cert-msc50-cpp)
-        if (index < (pos - array)) {
-            size = pos - array;
-        } else {
-            if (index > (pos - array)) {
-                size = ((array + size) - pos) - 1;
-                index -= pos - array + 1;
-                array = pos + 1;
-            } else {
-                return *pos;
-            }
-        }
+    //recalculation
+    int sum = 0;
+    for (int i = 0; i < 256; ++i) {
+        sum += indexByByte[i];
+        indexByByte[i] = sum - indexByByte[i];
+    }
+    //do sort into buffer
+    for (unsigned long long* ptr = beginning; ptr < beginning + size; ++ptr) {
+        buffer[indexByByte[(*ptr / magnitude) % 256]] = *ptr;
+        ++indexByByte[(*ptr / magnitude) % 256];
+    }
+    //do sort within each byte
+    if (magnitude != 72057594037927936) { // 2 ^ 56 it is
+        sortByLSByte(&buffer[0], size, magnitude * 256);
+    }
+    //copy from buffer
+    int counter = 0;
+    for (unsigned long long* ptr = beginning; ptr < beginning + size; ++ptr) {
+        *ptr = buffer[counter];
+        ++counter;
     }
 }
-
-class isLess {
-public:
-    bool operator() (const long long* obj1, const long long* obj2) {
-        return *obj1 <= *obj2;
-    }
-};
 
 int main() {
 
-    std::ios_base::sync_with_stdio(false);
+    std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
     std::cout.tie(nullptr);
 
-    long long n = 0;
-    long long k = 0;
-    std::cin >> n;
-    std::cin >> k;
-    std::vector<long long> array(n);
+    int size;
+    std::cin >> size;
+    std::vector<unsigned long long> toSort(size);
 
-    for (long long i = 0; i < n; ++i) {
-        std::cin >> array[i];
+    for (int i = 0; i < size; ++i) {
+        std::cin >> toSort[i];
     }
 
-    std::cout << quickSelect<long long, isLess>(k, &(array[0]), n);
+    sortByLSByte(&toSort[0], size, 1);
 
+    for (int i = 0; i < size; ++i) {
+        std::cout << toSort[i] << ' ';
+    }
+
+    std::cout << '\n';
 }
