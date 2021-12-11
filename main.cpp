@@ -1,69 +1,82 @@
-/*Даны неотрицательные целые числа N, K и массив целых чисел из диапазона [0,109] размера N.
- * Требуется найти K-ю порядковую статистику, т.е.
- * напечатать число, которое бы стояло на позиции с индексом K ∈[0,N−1] в отсортированном массиве.
+/*Отсортируйте данную последовательность, используя алгоритм быстрой сортировки QuickSort.
 
-Реализуйте алгоритм QuickSelect (среднее время работы O(N)).
+Решения, использующие случайные числа, получат 1 балл.
+
+Решения без использования случайных чисел получат 2 балла.
 
 Входные данные
-В первой строке записаны N и K.
-
-В N последующих строках записаны числа последовательности.
+В первой строке дается число n (1≤n≤105)- количество элементов в массиве, затем даются n чисел (0≤ai≤109).
 
 Выходные данные
-K-я порядковая статистика.*/
+В единственной строке выходного файла выведите последовательность в неубывающем порядке.*/
 
 #include <iostream>
 #include <vector>
 
 template<class T>
-void swap(T* obj1, T* obj2) {
-    static T tmp;
-    tmp = *obj1;
-    *obj1 = *obj2;
-    *obj2 = tmp;
+void swap(T* a, T* b) {
+    T tmp = *a;
+    *a = *b;
+    *b = tmp;
 }
 
 template<class T, class Comparator>
-T* partition (long long pivotIndex, T* array, long long size) {
+T* medianOfThree(T* a, T* b, T* c) {
+    static Comparator comparator;
+    if (comparator(b, a)) {
+        swap<T>(a, b);
+    }
+    if (comparator(c, a)) {
+        swap<T>(a, c);
+    }
+    if (comparator(c, b)) {
+        swap<T>(c, b);
+    }
+    return b;
+}
+
+template<class T, class Comparator>
+void partition (T* beginning, int size, T* &pivotLow, T* &pivotHigh) {
 
     static Comparator compare;
-    T* pivot = array + pivotIndex;
-    T pivotValue = *pivot;
-    T* store = array;
-    swap<T>(pivot, array + size - 1);
+    T pivotValue = *pivotLow;
+    swap<T>(pivotLow, beginning);
+    pivotLow = beginning;
+    pivotHigh = pivotLow;
 
-    for (long long i = 0; i < size - 1; ++i) {
-        if (compare((array + i), &pivotValue)) {
-            swap<T>(array + i, store);
-            ++store;
+    for (T* ptr = beginning + 1; ptr < beginning + size; ++ptr) {
+        if (compare.isEqual(ptr, &pivotValue)) {
+            swap(ptr, pivotHigh + 1);
+            ++pivotHigh;
+            continue;
+        }
+        if (compare(ptr, &pivotValue)) {
+            swap(ptr, pivotLow);
+            ++pivotLow;
+            swap(ptr, pivotHigh + 1);
+            ++pivotHigh;
+            continue;
         }
     }
-
-    swap<T>(store, array + size - 1);
-    return store;
 
 }
 
 template<class T, class Comparator>
-T quickSelect (long long index, T* array, long long size) {
-    T* pos = array;
-    while(true) {
-        if (size <= 0) {
-            return *pos;
-        }
-        pos = partition<T, Comparator>((std::rand() % size), array, size); // NOLINT(cert-msc50-cpp)
-        if (index < (pos - array)) {
-            size = pos - array;
-        } else {
-            if (index > (pos - array)) {
-                size = ((array + size) - pos) - 1;
-                index -= pos - array + 1;
-                array = pos + 1;
-            } else {
-                return *pos;
-            }
-        }
+void quickSort(T* beginning, int size) {
+    if (size == 1) {
+        return;
     }
+    T* low = beginning;
+    T* high = beginning + size - 1;
+    T* mid = beginning + (size / 2);
+    T* pivotLow = medianOfThree<T, Comparator>(low, mid, high);
+    T* pivotHigh = pivotLow;
+    if (size <= 3) {
+        return;
+    }
+    partition<T, Comparator>(beginning, size, pivotLow, pivotHigh);
+    quickSort<T, Comparator>(beginning, (pivotLow - beginning));
+    quickSort<T, Comparator>(pivotHigh, size - (pivotHigh - beginning));
 }
 
 class isLess {
@@ -71,24 +84,31 @@ public:
     bool operator() (const long long* obj1, const long long* obj2) {
         return *obj1 <= *obj2;
     }
+    static bool isEqual (const long long* obj1, const long long* obj2) {
+        return *obj1 == *obj2;
+    }
 };
 
 int main() {
 
-    std::ios_base::sync_with_stdio(false);
+    std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
     std::cout.tie(nullptr);
 
-    long long n = 0;
-    long long k = 0;
-    std::cin >> n;
-    std::cin >> k;
-    std::vector<long long> array(n);
+    int size;
+    std::cin >> size;
+    std::vector<long long> toSort(size);
 
-    for (long long i = 0; i < n; ++i) {
-        std::cin >> array[i];
+    for (int i = 0; i < size; ++i) {
+        std::cin >> toSort[i];
     }
 
-    std::cout << quickSelect<long long, isLess>(k, &(array[0]), n);
+    quickSort<long long, isLess>(&toSort[0], size);
+
+    for (int i = 0; i < size; ++i) {
+        std::cout << toSort[i] << ' ';
+    }
+
+    std::cout << '\n';
 
 }
